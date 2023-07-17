@@ -1,0 +1,72 @@
+-- Define the vehicle models and their spawn names
+local vehicles = {
+    {model = "adder", name = "Adder"},
+    {model = "bullet", name = "Bullet"},
+    {model = "cheetah", name = "Cheetah"},
+    -- Add more vehicle entries as needed
+}
+
+-- Function to spawn a vehicle
+function SpawnVehicle(model)
+    local playerPed = PlayerPedId()
+    local playerCoords = GetEntityCoords(playerPed)
+    local heading = GetEntityHeading(playerPed)
+
+    RequestModel(model)
+    while not HasModelLoaded(model) do
+        Citizen.Wait(0)
+    end
+
+    local vehicle = CreateVehicle(model, playerCoords, heading, true, false)
+    SetPedIntoVehicle(playerPed, vehicle, -1)
+
+    SetEntityAsNoLongerNeeded(vehicle)
+    SetModelAsNoLongerNeeded(model)
+
+    -- Inform the player
+    TriggerEvent("chat:addMessage", {
+        color = {255, 0, 0},
+        multiline = true,
+        args = {"Vehicle Spawned", "A " .. model .. " has been spawned."}
+    })
+end
+
+-- Create the spawn vehicle menu
+RegisterCommand("spawnmenu", function()
+    local menu = {}
+
+    for i, vehicle in ipairs(vehicles) do
+        table.insert(menu, {
+            name = vehicle.name,
+            action = function()
+                SpawnVehicle(vehicle.model)
+            end
+        })
+    end
+
+    SpawnMenu.CreateMenu("spawnmenu", "Vehicle Spawn Menu")
+
+    while true do
+        if SpawnMenu.IsMenuOpened("spawnmenu") then
+            for _, menuItem in ipairs(menu) do
+                if SpawnMenu.Button(menuItem.name) then
+                    menuItem.action()
+                end
+            end
+
+            SpawnMenu.Display()
+        end
+
+        Citizen.Wait(0)
+    end
+end)
+
+-- Keybind to open the spawn vehicle menu
+RegisterCommand("spawnmenu", function()
+    WSpawnMenu.OpenMenu("spawnmenu")
+end, false)
+
+-- Keybind to close the spawn vehicle menu
+RegisterCommand("closespawnmenu", function()
+    SpawnMenu.CloseMenu()
+end, false)
